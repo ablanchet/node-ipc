@@ -39,24 +39,14 @@ class Client extends Events{
 function emit(type,data){
     this.log('dispatching event to ', this.id, this.path, ' : ', type, ',', data);
 
-    let message=new Message;
-    message.type=type;
-    message.data=data;
+    let message = this.config.rawBuffer === true ? new Buffer(type,this.config.encoding) : {type: type, data: data};
 
-    if(this.config.rawBuffer){
-        message=new Buffer(type,this.config.encoding);
-    }else{
-        message=eventParser.format(message);
+    if(this.config.sync) {
+        this.queue.add(syncEmit.bind(this,message));
     }
-
-    if(!this.config.sync){
+    else{
         this.socket.write(message);
-        return;
     }
-
-    this.queue.add(
-        syncEmit.bind(this,message)
-    );
 }
 
 function syncEmit(message){
